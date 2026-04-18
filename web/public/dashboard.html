@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="FlowCast remote controller for secure laptop access from a mobile browser with persistent WebRTC sessions."
+    />
+    <title>FlowCast Dashboard</title>
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/config.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js",
+          "firebase/database": "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js",
+          "firebase/functions": "https://www.gstatic.com/firebasejs/12.7.0/firebase-functions.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="noise"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img class="brand-logo" src="/images/logo.png" alt="FlowCast logo" />
+          <div>
+            <p class="eyebrow">Always-on remote desktop</p>
+            <h1>FlowCast Dashboard</h1>
+          </div>
+        </div>
+        <div class="status-cluster">
+          <span class="status-pill" id="connectionPill" data-state="offline">Offline</span>
+          <button class="ghost-button" id="signOutButton" type="button" hidden>Sign out</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="rail">
+          <section class="panel auth-panel">
+            <div class="section-heading">
+              <p class="section-kicker">Secure Access</p>
+              <h2>Authentication</h2>
+            </div>
+
+            <p class="panel-copy" id="configWarning" hidden>
+              Update <code>web/public/config.js</code> with your Firebase values before signing in.
+            </p>
+
+            <div id="authView">
+              <form id="authForm" class="stack-form">
+                <label>
+                  <span>Email</span>
+                  <input id="authEmail" type="email" autocomplete="email" placeholder="owner@example.com" required />
+                </label>
+                <label>
+                  <span>Password</span>
+                  <input
+                    id="authPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Minimum 6 characters"
+                    minlength="6"
+                    required
+                  />
+                </label>
+                <button id="authSubmit" class="primary-button" type="submit">Sign in</button>
+              </form>
+              <button id="authModeToggle" class="text-button" type="button">Need an account? Create one</button>
+            </div>
+
+            <div id="sessionView" hidden>
+              <p class="panel-copy">
+                Signed in as <strong id="currentUserEmail">-</strong>
+              </p>
+              <p class="muted-line">
+                Sessions stay alive until you press <strong>Disconnect</strong>. Reloading the page restores the active session automatically.
+              </p>
+            </div>
+          </section>
+
+          <section class="panel pair-panel">
+            <div class="section-heading">
+              <p class="section-kicker">Link A Laptop</p>
+              <h2>Device Pairing</h2>
+            </div>
+            <form id="pairForm" class="inline-form">
+              <label class="compact-field">
+                <span>6-digit code</span>
+                <input
+                  id="pairCodeInput"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  minlength="6"
+                  pattern="[0-9]{6}"
+                  placeholder="123456"
+                  required
+                />
+              </label>
+              <button class="primary-button" type="submit">Link device</button>
+            </form>
+            <p class="muted-line">
+              Start the Node.js laptop agent first. It prints a one-time pairing code with a 10-minute expiry.
+            </p>
+          </section>
+
+          <section class="panel device-panel">
+            <div class="section-heading">
+              <p class="section-kicker">Your Machines</p>
+              <h2>Device Dashboard</h2>
+            </div>
+            <div id="deviceList" class="device-list"></div>
+          </section>
+        </aside>
+
+        <section class="stage-panel">
+          <div class="panel stage-header">
+            <div>
+              <p class="section-kicker">Remote Session</p>
+              <h2 id="activeDeviceName">No device connected</h2>
+            </div>
+            <div class="session-actions">
+              <label class="toggle-wrap">
+                <input id="lowDataToggle" type="checkbox" />
+                <span>Low data mode</span>
+              </label>
+              <button id="connectButton" class="primary-button" type="button" disabled>Connect</button>
+              <button id="disconnectButton" class="danger-button" type="button" disabled>Disconnect</button>
+            </div>
+          </div>
+
+          <div class="remote-stage">
+            <video id="remoteVideo" autoplay playsinline muted></video>
+            <div id="remotePlaceholder" class="remote-placeholder">
+              <img class="hero-image" src="/images/hero-devices.png" alt="Laptop and tablet linked by FlowCast" />
+              <div class="hero-copy">
+                <h3>Ready when you are</h3>
+                <p>Select a linked laptop, then start a secure remote session from here.</p>
+              </div>
+            </div>
+            <div id="remoteTouchpad" class="remote-touchpad" aria-label="Remote touch surface"></div>
+          </div>
+
+          <div class="stage-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <p class="section-kicker">Touch Controls</p>
+                <h2>Pointer + Clicks</h2>
+              </div>
+              <div class="button-row">
+                <button id="leftClickButton" class="ghost-button" type="button">Left click</button>
+                <button id="rightClickButton" class="ghost-button" type="button">Right click</button>
+                <button id="dragToggleButton" class="ghost-button" type="button" aria-pressed="false">Drag mode off</button>
+              </div>
+              <p class="muted-line">
+                Drag a finger across the live screen to move the cursor. Tap to click. Turn on drag mode for click-and-drag gestures.
+              </p>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <p class="section-kicker">Keyboard</p>
+                <h2>Text + Special Keys</h2>
+              </div>
+              <form id="textInputForm" class="stack-form compact">
+                <label>
+                  <span>Send text</span>
+                  <textarea id="textToSend" rows="3" placeholder="Type here, then send it to the laptop"></textarea>
+                </label>
+                <button class="primary-button" type="submit">Send text</button>
+              </form>
+              <div class="button-grid">
+                <button class="ghost-button special-key" data-key="Enter" type="button">Enter</button>
+                <button class="ghost-button special-key" data-key="Backspace" type="button">Backspace</button>
+                <button class="ghost-button special-key" data-key="Tab" type="button">Tab</button>
+                <button class="ghost-button special-key" data-key="Escape" type="button">Esc</button>
+                <button class="ghost-button special-key" data-key="ArrowUp" type="button">Up</button>
+                <button class="ghost-button special-key" data-key="ArrowDown" type="button">Down</button>
+                <button class="ghost-button special-key" data-key="ArrowLeft" type="button">Left</button>
+                <button class="ghost-button special-key" data-key="ArrowRight" type="button">Right</button>
+                <button class="ghost-button combo-key" data-combo="Control,Alt,Delete" type="button">Ctrl+Alt+Del</button>
+                <button class="ghost-button combo-key" data-combo="Meta,D" type="button">Show desktop</button>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <p class="section-kicker">Clipboard + Screenshots</p>
+                <h2>Quick Utilities</h2>
+              </div>
+              <div class="button-row">
+                <button id="pushClipboardButton" class="ghost-button" type="button">Push clipboard</button>
+                <button id="pullClipboardButton" class="ghost-button" type="button">Pull clipboard</button>
+                <button id="screenshotButton" class="ghost-button" type="button">Capture screenshot</button>
+              </div>
+              <label class="compact-field">
+                <span>Clipboard preview</span>
+                <textarea id="clipboardPreview" rows="3" placeholder="Latest clipboard text appears here"></textarea>
+              </label>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <p class="section-kicker">File Transfer</p>
+                <h2>Upload + Download</h2>
+              </div>
+              <div class="stack-form compact">
+                <label>
+                  <span>Upload to laptop</span>
+                  <input id="fileUploadInput" type="file" />
+                </label>
+                <button id="uploadButton" class="ghost-button" type="button">Send selected file</button>
+                <label>
+                  <span>Download from home directory</span>
+                  <input id="downloadPathInput" type="text" placeholder="Documents/report.pdf" />
+                </label>
+                <button id="downloadButton" class="ghost-button" type="button">Fetch file</button>
+              </div>
+              <p class="muted-line">Download requests are resolved inside the laptop user's home directory for safety.</p>
+            </section>
+
+            <section class="panel full-span">
+              <div class="section-heading">
+                <p class="section-kicker">Activity</p>
+                <h2>Status Console</h2>
+              </div>
+              <div class="status-grid">
+                <div>
+                  <span class="mini-label">Session ID</span>
+                  <strong id="sessionIdValue">-</strong>
+                </div>
+                <div>
+                  <span class="mini-label">Remote resolution</span>
+                  <strong id="resolutionValue">-</strong>
+                </div>
+                <div>
+                  <span class="mini-label">Heartbeat</span>
+                  <strong id="heartbeatValue">-</strong>
+                </div>
+                <div>
+                  <span class="mini-label">Transfer</span>
+                  <strong id="transferValue">Idle</strong>
+                </div>
+              </div>
+              <pre id="logOutput" class="log-output"></pre>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>

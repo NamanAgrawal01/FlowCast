@@ -1,0 +1,17 @@
+node_modules/
+functions/node_modules/
+agent/node_modules/
+.firebase/
+.firebaserc
+.env
+.env.local
+agent/.env
+agent/.agent-state/
+firebase-debug.log
+ui-debug.log
+.DS_Store
+Thumbs.db
+.tmp/
+
+
+/web/public/downloads/

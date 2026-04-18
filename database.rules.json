@@ -1,0 +1,25 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sessions": {
+      "$sessionId": {
+        ".read": "auth != null && (auth.uid === data.child('meta/controllerUid').val() || auth.uid === data.child('meta/deviceAuthUid').val() || auth.uid === data.child('meta/ownerUid').val())",
+        ".write": "auth != null && (auth.uid === data.child('meta/controllerUid').val() || auth.uid === data.child('meta/deviceAuthUid').val() || auth.uid === newData.child('meta/controllerUid').val() || auth.uid === newData.child('meta/deviceAuthUid').val() || auth.uid === newData.child('meta/ownerUid').val())"
+      }
+    },
+    "deviceSessions": {
+      "$deviceId": {
+        ".read": "auth != null && auth.uid === $deviceId",
+        ".write": false
+      }
+    },
+    "userSessions": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    }
+  }
+}
+

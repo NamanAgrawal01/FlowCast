@@ -1,0 +1,43 @@
+name: Build FlowCast Executables
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies (Root)
+        run: npm install
+
+      - name: Install dependencies (Agent)
+        working-directory: ./agent
+        run: npm install
+
+      - name: Build Windows Executable
+        run: npx pkg agent/package.json --target node18-win-x64 --output FlowCast-Setup.exe
+
+      - name: Build macOS Executable
+        run: npx pkg agent/package.json --target node18-macos-x64 --output FlowCast-Installer.dmg
+
+      - name: Upload Windows Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: FlowCast-Setup.exe
+
+      - name: Upload macOS Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: FlowCast-Installer.dmg

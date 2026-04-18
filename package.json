@@ -1,0 +1,17 @@
+{
+  "name": "flowcast",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FlowCast: a Firebase + WebRTC remote desktop MVP with a mobile-first web client and Node.js laptop agent.",
+  "scripts": {
+    "install:all": "npm install --prefix functions && npm install --prefix agent",
+    "serve": "firebase emulators:start --only hosting,functions,firestore,database",
+    "deploy": "firebase deploy --only hosting,functions,firestore,database",
+    "lint": "npm --prefix functions run lint && npm --prefix agent run lint",
+    "build:agent-win": "pkg agent/package.json --target node18-win-x64 --output web/public/downloads/FlowCast-Setup.exe",
+    "build:agent-mac": "pkg agent/package.json --target node18-macos-x64 --output web/public/downloads/FlowCast-Installer.dmg"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}

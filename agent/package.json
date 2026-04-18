@@ -1,0 +1,21 @@
+{
+  "name": "flowcast-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "bin": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "lint": "node --check src/config.js && node --check src/protocol.js && node --check src/session-agent.js && node --check src/index.js"
+  },
+  "dependencies": {
+    "@jitsi/robotjs": "^0.6.22",
+    "@roamhq/wrtc": "^0.10.0",
+    "clipboardy": "^5.0.0",
+    "dotenv": "^16.4.7",
+    "firebase": "^12.7.0",
+    "jimp": "^0.22.12",
+    "screenshot-desktop": "^1.15.3"
+  }
+}

@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function deviceResource() {
+      return resource.data;
+    }
+
+    function isDeviceAuth() {
+      return signedIn() && deviceResource().authUid == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /devices/{deviceId} {
+      allow read: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.authUid == request.auth.uid
+      );
+
+      allow create: if false;
+
+      allow update: if isDeviceAuth() &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status',
+          'lastSeenAt',
+          'lastHeartbeatAt',
+          'lastSessionId',
+          'screen',
+          'metrics',
+          'capabilities',
+          'appVersion',
+          'updatedAt',
+          'activeLowDataMode'
+        ]) &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.authUid == resource.data.authUid &&
+        request.resource.data.installationId == resource.data.installationId &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    match /remoteSessions/{sessionId} {
+      allow read: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        resource.data.deviceAuthUid == request.auth.uid
+      );
+
+      allow write: if false;
+    }
+
+    match /pairingCodes/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /deviceRegistrations/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /rateLimits/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
