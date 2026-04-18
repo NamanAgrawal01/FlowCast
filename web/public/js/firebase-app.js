@@ -72,7 +72,32 @@ export async function signOutUser() {
 
 export async function callFunction(name, payload) {
   ensureConfigured();
+
+  // If a custom backend URL is provided, use standard fetch instead of Firebase Functions
+  if (runtimeConfig.externalApiUrl) {
+    const url = `${runtimeConfig.externalApiUrl}/${name}`;
+    const user = auth.currentUser;
+    const idToken = user ? await user.getIdToken() : null;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": idToken ? `Bearer ${idToken}` : ""
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (!response.ok || result.ok === false) {
+      throw new Error(result.error || `Server returned ${response.status}`);
+    }
+    return result;
+  }
+
+  // Fallback to Firebase Functions (Requires Blaze Plan)
   const callable = httpsCallable(functions, name);
   const result = await callable(payload);
   return result.data;
 }
+
